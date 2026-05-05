@@ -1,0 +1,133 @@
+/* assets/css/style.css */
+
+/* กำหนดฟอนต์ Kanit ให้กับทุกส่วนของหน้า */
+body {
+    font-family: 'Sarabun', sans-serif;
+}
+
+:root {
+    --satit-blue: #123f73;
+    --satit-blue-2: #1a4f86;
+    --satit-sky: #2f6fa7;
+    --satit-orange: #ff5a00;
+    --satit-orange-2: #ff8a00;
+}
+
+.satit-navbar {
+    background: linear-gradient(90deg, #071b33, var(--satit-blue) 68%, var(--satit-blue-2)) !important;
+    box-shadow: 0 8px 24px rgba(18, 63, 115, 0.18);
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.btn-primary {
+    background-color: var(--satit-blue);
+    border-color: var(--satit-blue);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--satit-blue-2);
+    border-color: var(--satit-blue-2);
+}
+
+.btn-info,
+.bg-info {
+    background-color: var(--satit-blue) !important;
+    border-color: var(--satit-blue) !important;
+}
+
+.btn-outline-info {
+    color: var(--satit-blue);
+    border-color: var(--satit-blue);
+}
+
+.btn-outline-info:hover,
+.btn-outline-info:focus {
+    color: #fff;
+    background-color: var(--satit-blue);
+    border-color: var(--satit-blue);
+}
+
+.text-info {
+    color: var(--satit-blue) !important;
+}
+
+.btn-outline-success {
+    color: var(--satit-orange);
+    border-color: var(--satit-orange);
+}
+
+.btn-outline-success:hover,
+.btn-outline-success:focus {
+    color: #fff;
+    background-color: var(--satit-orange);
+    border-color: var(--satit-orange);
+}
+
+/* ปรับฟอนต์ของ Select2 ในส่วน Admin ให้เป็น Kanit ด้วย */
+.select2-container--bootstrap-5 .select2-selection,
+.select2-results__option {
+    font-family: 'Sarabun', sans-serif;
+}
+
+/* Report Page Enhancements */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Summary Cards */
+.card[style*="linear-gradient"] {
+    border-radius: 12px;
+}
+
+.card[style*="linear-gradient"] .card-body {
+    border-radius: 12px;
+}
+
+/* Table Hover Effect */
+.table-hover tbody tr:hover {
+    background-color: rgba(18, 63, 115, 0.08);
+}
+
+/* Badge Improvements */
+.badge {
+    font-weight: 500;
+}
+
+/* Modal Styling */
+#detailModal .modal-header {
+    border-radius: 0;
+}
+
+#detailModal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card[style*="linear-gradient"] h2 {
+        font-size: 1.5rem;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* No SLA Row Styling */
+.table tbody tr.table-secondary {
+    background-color: rgba(108, 117, 125, 0.15) !important;
+    font-style: italic;
+}
+
+.table tbody tr.table-secondary td {
+    color: #6c757d;
+}
