@@ -12,6 +12,10 @@ if (!function_exists('env')) {
 // --- ชื่อระบบ ---
 define('APP_NAME', 'satit-helpdesk');
 
+// --- Timezone ---
+define('APP_TIMEZONE', env('APP_TIMEZONE', 'Asia/Bangkok'));
+date_default_timezone_set(APP_TIMEZONE);
+
 // --- Telegram Bot Settings ---
 // ค่าจะถูกอ่านจากไฟล์ .env โดยอัตโนมัติ
 define('TELEGRAM_BOT_TOKEN', env('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE'));

@@ -59,6 +59,8 @@ function getTelegramConfigStatus()
         'chat_id_set' => $chatId !== '' && $chatId !== 'YOUR_CHAT_ID_HERE',
         'curl_loaded' => function_exists('curl_init'),
         'env_file_exists' => file_exists(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env'),
+        'timezone' => date_default_timezone_get(),
+        'server_time' => date('Y-m-d H:i:s'),
         'token_preview' => maskTelegramToken($token),
         'chat_id' => $chatId !== 'YOUR_CHAT_ID_HERE' ? $chatId : ''
     ];

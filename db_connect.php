@@ -15,7 +15,7 @@ $password = env('DB_PASSWORD', '');
 $dbname = env('DB_NAME', 'satit_helpdesk');
 
 // --- 2. ตั้งค่า Timezone และ Character Set ของ PHP ---
-date_default_timezone_set('Asia/Bangkok');
+date_default_timezone_set(env('APP_TIMEZONE', 'Asia/Bangkok'));
 
 // --- 3. สร้างการเชื่อมต่อด้วย mysqli (Object-oriented style) ---
 try {
