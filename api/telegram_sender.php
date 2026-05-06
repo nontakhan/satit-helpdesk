@@ -37,6 +37,41 @@ function sendTelegramMessage($botToken, $chatId, $message)
     return $response;
 }
 
+function isTelegramConfigured()
+{
+    return defined('TELEGRAM_BOT_TOKEN') &&
+        defined('TELEGRAM_CHAT_ID') &&
+        TELEGRAM_BOT_TOKEN !== '' &&
+        TELEGRAM_CHAT_ID !== '' &&
+        TELEGRAM_BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE' &&
+        TELEGRAM_CHAT_ID !== 'YOUR_CHAT_ID_HERE';
+}
+
+function getTelegramConfigStatus()
+{
+    $token = defined('TELEGRAM_BOT_TOKEN') ? TELEGRAM_BOT_TOKEN : '';
+    $chatId = defined('TELEGRAM_CHAT_ID') ? TELEGRAM_CHAT_ID : '';
+
+    return [
+        'configured' => isTelegramConfigured(),
+        'token_set' => $token !== '' && $token !== 'YOUR_BOT_TOKEN_HERE',
+        'chat_id_set' => $chatId !== '' && $chatId !== 'YOUR_CHAT_ID_HERE',
+        'curl_loaded' => function_exists('curl_init'),
+        'env_file_exists' => file_exists(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env'),
+        'token_preview' => maskTelegramToken($token),
+        'chat_id' => $chatId !== 'YOUR_CHAT_ID_HERE' ? $chatId : ''
+    ];
+}
+
+function maskTelegramToken($token)
+{
+    if ($token === '' || $token === 'YOUR_BOT_TOKEN_HERE') {
+        return '';
+    }
+
+    return substr($token, 0, 8) . '...' . substr($token, -4);
+}
+
 function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
 {
     if (!is_file($photoPath)) {

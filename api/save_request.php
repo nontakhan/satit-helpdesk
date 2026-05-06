@@ -69,13 +69,15 @@ try {
             $message .= "<b>ปัญหา:</b>\n" . htmlspecialchars($problem_description);
 
             // ส่งข้อความ
-            if (defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
+            if (isTelegramConfigured()) {
                 sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $message);
 
                 if (!empty($image_path)) {
                     $photo_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $image_path);
                     sendTelegramPhoto(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $photo_path, 'รูปประกอบรายการ #' . $new_request_id);
                 }
+            } else {
+                error_log('Telegram notification skipped: bot token or chat id is not configured. Check .env on this server.');
             }
 
         } catch (Exception $e) {
