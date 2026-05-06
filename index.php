@@ -823,9 +823,75 @@ $reporters_result = $conn->query($reporters_sql);
                 return true;
             }
 
+            function loadImageFromFile(file) {
+                return new Promise((resolve, reject) => {
+                    const imageUrl = URL.createObjectURL(file);
+                    const image = new Image();
+
+                    image.onload = () => {
+                        URL.revokeObjectURL(imageUrl);
+                        resolve(image);
+                    };
+                    image.onerror = () => {
+                        URL.revokeObjectURL(imageUrl);
+                        reject(new Error('ไม่สามารถอ่านรูปภาพได้'));
+                    };
+                    image.src = imageUrl;
+                });
+            }
+
+            async function resizeRequestImage(file) {
+                const compressibleTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+                if (!file || !compressibleTypes.includes(file.type)) {
+                    return file;
+                }
+
+                const maxDimension = 1600;
+                const imageQuality = 0.78;
+                const image = await loadImageFromFile(file);
+                const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+                const width = Math.round(image.width * scale);
+                const height = Math.round(image.height * scale);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const context = canvas.getContext('2d');
+                context.drawImage(image, 0, 0, width, height);
+
+                const blob = await new Promise((resolve) => {
+                    canvas.toBlob(resolve, 'image/jpeg', imageQuality);
+                });
+
+                if (!blob || blob.size >= file.size) {
+                    return file;
+                }
+
+                const originalName = file.name.replace(/\.[^.]+$/, '');
+                return new File([blob], `${originalName}-resized.jpg`, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+            }
+
+            async function buildRequestFormData(form) {
+                const formData = new FormData(form);
+                const imageInput = document.getElementById('request_image');
+                const file = imageInput.files[0];
+
+                if (file) {
+                    const resizedFile = await resizeRequestImage(file);
+                    formData.set('request_image', resizedFile, resizedFile.name);
+                }
+
+                return formData;
+            }
+
             document.getElementById('request_image').addEventListener('change', validateRequestImage);
 
-            document.getElementById('requestForm').addEventListener('submit', function (event) {
+            document.getElementById('requestForm').addEventListener('submit', async function (event) {
                 event.preventDefault();
                 const form = this; // เก็บ form ที่ถูก submit ไว้
 
@@ -835,27 +901,37 @@ $reporters_result = $conn->query($reporters_sql);
 
                 // แสดง Pop-up ยืนยันก่อน
                 Swal.fire({
-                    title: 'ยืนยันการแจ้งปัญหา',
-                    text: "ระบบนี้สำหรับแจ้งปัญหาที่เกี่ยวข้องกับงาน IT เท่านั้น กรุณายืนยันเพื่อดำเนินการต่อ",
+                    title: 'ยืนยันการส่งเรื่อง',
+                    text: 'ต้องการส่งเรื่องแจ้งซ่อมนี้หรือไม่?',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
-                    confirmButtonText: 'ยืนยัน, เป็นปัญหา IT',
+                    confirmButtonText: 'ส่งเรื่อง',
                     cancelButtonText: 'ยกเลิก'
-                }).then((result) => {
+                }).then(async (result) => {
                     // ถ้าผู้ใช้กดยืนยัน
                     if (result.isConfirmed) {
-                        const formData = new FormData(form);
-
                         // แสดงการโหลด
                         Swal.fire({
-                            title: 'กำลังส่งข้อมูล...',
-                            text: 'กรุณารอสักครู่',
+                            title: 'กำลังส่งเรื่อง...',
+                            text: 'กำลังปรับขนาดรูปและบันทึกข้อมูล',
                             allowOutsideClick: false,
                             showConfirmButton: false,
                             didOpen: () => { Swal.showLoading(); }
                         });
+
+                        let formData;
+                        try {
+                            formData = await buildRequestFormData(form);
+                        } catch (error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'ไม่สามารถปรับขนาดรูปภาพได้',
+                                text: error.message || 'กรุณาลองเลือกไฟล์รูปภาพใหม่อีกครั้ง'
+                            });
+                            return;
+                        }
 
                         // ส่งข้อมูลไปยัง API
                         axios.post('api/save_request.php', formData)
