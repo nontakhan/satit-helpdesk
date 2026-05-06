@@ -25,14 +25,15 @@ function sendTelegramMessage($botToken, $chatId, $message)
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_errno($ch) ? curl_error($ch) : '';
 
-    if (curl_errno($ch)) {
-        error_log('Telegram message cURL Error: ' . curl_error($ch));
+    if ($curlError !== '') {
+        error_log('Telegram message cURL Error: ' . $curlError);
     }
 
     curl_close($ch);
 
-    logTelegramApiError('sendMessage', $httpCode, $response);
+    recordTelegramApiResult('sendMessage', $httpCode, $response, $curlError);
 
     return $response;
 }
@@ -99,16 +100,38 @@ function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_errno($ch) ? curl_error($ch) : '';
 
-    if (curl_errno($ch)) {
-        error_log('Telegram photo cURL Error: ' . curl_error($ch));
+    if ($curlError !== '') {
+        error_log('Telegram photo cURL Error: ' . $curlError);
     }
 
     curl_close($ch);
 
-    logTelegramApiError('sendPhoto', $httpCode, $response);
+    recordTelegramApiResult('sendPhoto', $httpCode, $response, $curlError);
 
     return $response;
+}
+
+function recordTelegramApiResult($method, $httpCode, $response, $curlError = '')
+{
+    $decodedResponse = json_decode((string)$response, true);
+
+    $GLOBALS['telegram_last_result'] = [
+        'method' => $method,
+        'http_code' => $httpCode,
+        'curl_error' => $curlError,
+        'ok' => is_array($decodedResponse) ? ($decodedResponse['ok'] ?? null) : null,
+        'error_code' => is_array($decodedResponse) ? ($decodedResponse['error_code'] ?? null) : null,
+        'description' => is_array($decodedResponse) ? ($decodedResponse['description'] ?? null) : null,
+    ];
+
+    logTelegramApiError($method, $httpCode, $response);
+}
+
+function getLastTelegramApiResult()
+{
+    return $GLOBALS['telegram_last_result'] ?? null;
 }
 
 function logTelegramApiError($method, $httpCode, $response)

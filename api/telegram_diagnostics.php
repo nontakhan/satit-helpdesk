@@ -39,13 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message .= "ทดสอบการแจ้งเตือนจาก server เวลา " . date('d/m/Y H:i:s');
     $response = sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $message);
     $decodedResponse = json_decode((string)$response, true);
+    $lastResult = getLastTelegramApiResult();
 
     echo json_encode([
         'success' => is_array($decodedResponse) && !empty($decodedResponse['ok']),
         'message' => is_array($decodedResponse) && !empty($decodedResponse['ok'])
             ? 'ส่งข้อความทดสอบ Telegram สำเร็จ'
-            : 'ส่งข้อความทดสอบ Telegram ไม่สำเร็จ กรุณาดู error log ของ server',
+            : 'ส่งข้อความทดสอบ Telegram ไม่สำเร็จ',
         'status' => $status,
+        'last_result' => $lastResult,
         'telegram_response' => $decodedResponse
     ]);
     exit();
