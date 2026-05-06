@@ -348,7 +348,7 @@ $reporters_result = $conn->query($reporters_sql);
 
                     <!-- Form Section -->
                     <div class="form-section">
-                        <form id="requestForm">
+                        <form id="requestForm" enctype="multipart/form-data">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="request_date" class="form-label">
@@ -373,6 +373,14 @@ $reporters_result = $conn->query($reporters_sql);
                                 </label>
                                 <textarea class="form-control" id="problem_description" name="problem_description"
                                     rows="4" required placeholder="อธิบายปัญหาที่พบโดยละเอียด..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="request_image" class="form-label">
+                                    <i class="bi bi-image"></i> รูปประกอบ
+                                </label>
+                                <input type="file" class="form-control" id="request_image" name="request_image"
+                                    accept="image/jpeg,image/png,image/webp,image/gif">
+                                <div class="form-text">อัปโหลดได้ 1 รูป รองรับ JPG, PNG, WEBP, GIF ขนาดไม่เกิน 5MB</div>
                             </div>
                             <div class="mb-3">
                                 <label for="location_id" class="form-label">

@@ -3215,6 +3215,7 @@ CREATE TABLE `requests` (
   `location_id` int(11) NOT NULL,
   `reporter_id` int(11) NOT NULL,
   `current_status_id` int(11) NOT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `repair_date` datetime DEFAULT NULL,
   `resolution_time_minutes` int(11) DEFAULT NULL,

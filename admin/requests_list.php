@@ -28,7 +28,7 @@ if (isset($_GET['status']) && !empty($_GET['status'])) {
 // ===== ดึงรายการแจ้งซ่อม =====
 $requests_sql = "
     SELECT 
-        r.id, r.request_date, r.problem_description, r.current_status_id,
+        r.id, r.request_date, r.problem_description, r.current_status_id, r.image_path,
         l.location_name, p.reporter_name, s_current.status_name as current_status_name,
         r.repair_date, a.full_name as admin_name, c.category_name, r.cause, r.solution,
         s_final.status_name as final_status_name, r.is_phone_call,
@@ -160,6 +160,7 @@ $(document).ready(function() {
                     <tr><th>ผู้แจ้ง</th><td>${requestData.reporter_name || 'N/A'}</td></tr>
                     <tr><th>สถานที่</th><td>${requestData.location_name || 'N/A'}</td></tr>
                     <tr><th>ปัญหา</th><td>${requestData.problem_description || 'N/A'}</td></tr>
+                    <tr><th>รูปประกอบ</th><td>${requestData.image_path ? `<a href="../${requestData.image_path}" target="_blank" rel="noopener"><img src="../${requestData.image_path}" alt="รูปประกอบการแจ้งซ่อม" class="img-fluid rounded border" style="max-height: 360px;"></a>` : 'N/A'}</td></tr>
                 </table>
                 <hr>
                 <h5>ผลการดำเนินงาน</h5>

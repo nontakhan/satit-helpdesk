@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 require_once '../db_connect.php';
 require_once '../config.php';
 require_once 'telegram_sender.php';
+require_once 'upload_helpers.php';
 
 $response = ['success' => false, 'message' => ''];
 
@@ -24,17 +25,18 @@ try {
 
     $request_datetime = $request_date . ' ' . $request_time . ':00';
     $initial_status_id = 1;
+    $image_path = handleRequestImageUpload();
 
     $stmt = $conn->prepare(
-        "INSERT INTO requests (request_date, problem_description, location_id, reporter_id, current_status_id) 
-         VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO requests (request_date, problem_description, location_id, reporter_id, current_status_id, image_path) 
+         VALUES (?, ?, ?, ?, ?, ?)"
     );
 
     if ($stmt === false) {
         throw new Exception('Prepare statement failed: ' . $conn->error);
     }
     
-    $stmt->bind_param("ssiii", $request_datetime, $problem_description, $location_id, $reporter_id, $initial_status_id);
+    $stmt->bind_param("ssiiis", $request_datetime, $problem_description, $location_id, $reporter_id, $initial_status_id, $image_path);
 
     if ($stmt->execute()) {
         $response['success'] = true;

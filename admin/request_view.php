@@ -69,6 +69,14 @@ $statuses = $conn->query("SELECT id, status_name FROM statuses ORDER BY status_n
                     <label class="form-label">รายละเอียดปัญหา</label>
                     <textarea class="form-control" name="problem_description" rows="4" required><?php echo htmlspecialchars($request['problem_description']); ?></textarea>
                 </div>
+                <?php if (!empty($request['image_path'])): ?>
+                    <div class="mb-3">
+                        <label class="form-label">รูปประกอบ</label>
+                        <a href="../<?php echo htmlspecialchars($request['image_path']); ?>" target="_blank" rel="noopener" class="d-block">
+                            <img src="../<?php echo htmlspecialchars($request['image_path']); ?>" alt="รูปประกอบการแจ้งซ่อม" class="img-fluid rounded border">
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
