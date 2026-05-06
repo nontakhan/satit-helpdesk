@@ -41,4 +41,41 @@ function sendTelegramMessage($botToken, $chatId, $message)
 
     return $response;
 }
+
+function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
+{
+    if (!is_file($photoPath)) {
+        error_log('Telegram photo file not found: ' . $photoPath);
+        return false;
+    }
+
+    $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
+    $postData = [
+        'chat_id' => $chatId,
+        'photo' => new CURLFile($photoPath),
+        'caption' => mb_substr($caption, 0, 1024),
+        'parse_mode' => 'HTML'
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $apiUrl);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+
+    // SSL options for Windows compatibility
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        error_log('Telegram photo cURL Error: ' . curl_error($ch));
+    }
+
+    curl_close($ch);
+
+    return $response;
+}
 ?>
