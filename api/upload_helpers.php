@@ -75,7 +75,7 @@ function getUploadErrorMessage($error_code)
     switch ($error_code) {
         case UPLOAD_ERR_INI_SIZE:
         case UPLOAD_ERR_FORM_SIZE:
-            return 'ไฟล์รูปภาพมีขนาดใหญ่เกินกว่าที่ระบบรองรับ กรุณาเลือกไฟล์ไม่เกิน 5MB';
+            return 'ไฟล์รูปภาพใหญ่เกินค่าที่ PHP อนุญาตในขณะนี้ (' . getPhpUploadLimitLabel() . ') กรุณาเลือกไฟล์ให้เล็กกว่านี้ หรือตรวจค่า upload_max_filesize/post_max_size ของ server';
         case UPLOAD_ERR_PARTIAL:
             return 'อัปโหลดรูปภาพไม่สมบูรณ์ กรุณาเลือกไฟล์แล้วส่งใหม่อีกครั้ง';
         case UPLOAD_ERR_NO_TMP_DIR:
@@ -87,4 +87,52 @@ function getUploadErrorMessage($error_code)
         default:
             return 'ไม่สามารถอัปโหลดรูปได้ กรุณาลองใหม่อีกครั้ง';
     }
+}
+
+function getPhpUploadLimitLabel()
+{
+    $upload_limit = parsePhpSize(ini_get('upload_max_filesize'));
+    $post_limit = parsePhpSize(ini_get('post_max_size'));
+    $limits = array_filter([$upload_limit, $post_limit]);
+
+    if (empty($limits)) {
+        return 'ไม่ทราบค่า limit';
+    }
+
+    return formatBytes(min($limits));
+}
+
+function parsePhpSize($value)
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return 0;
+    }
+
+    $unit = strtolower(substr($value, -1));
+    $number = (float)$value;
+
+    switch ($unit) {
+        case 'g':
+            return (int)($number * 1024 * 1024 * 1024);
+        case 'm':
+            return (int)($number * 1024 * 1024);
+        case 'k':
+            return (int)($number * 1024);
+        default:
+            return (int)$number;
+    }
+}
+
+function formatBytes($bytes)
+{
+    if ($bytes >= 1024 * 1024) {
+        return rtrim(rtrim(number_format($bytes / 1024 / 1024, 2, '.', ''), '0'), '.') . 'MB';
+    }
+
+    if ($bytes >= 1024) {
+        return rtrim(rtrim(number_format($bytes / 1024, 2, '.', ''), '0'), '.') . 'KB';
+    }
+
+    return $bytes . ' bytes';
 }
