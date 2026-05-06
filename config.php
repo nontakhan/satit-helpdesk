@@ -20,3 +20,6 @@ date_default_timezone_set(APP_TIMEZONE);
 // ค่าจะถูกอ่านจากไฟล์ .env โดยอัตโนมัติ
 define('TELEGRAM_BOT_TOKEN', env('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE'));
 define('TELEGRAM_CHAT_ID', env('TELEGRAM_CHAT_ID', 'YOUR_CHAT_ID_HERE'));
+define('TELEGRAM_FORCE_IPV4', env('TELEGRAM_FORCE_IPV4', 'true'));
+define('TELEGRAM_PROXY_URL', env('TELEGRAM_PROXY_URL', ''));
+define('TELEGRAM_SSL_VERIFY', env('TELEGRAM_SSL_VERIFY', 'false'));

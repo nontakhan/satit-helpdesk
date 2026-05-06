@@ -15,6 +15,7 @@ require_once '../config.php';
 require_once 'telegram_sender.php';
 
 $status = getTelegramConfigStatus();
+$networkStatus = getTelegramNetworkStatus();
 $shouldSendTest = $_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['send']);
 
 if ($shouldSendTest) {
@@ -23,7 +24,8 @@ if ($shouldSendTest) {
             'success' => false,
             'test_sent' => false,
             'message' => 'ยังไม่ได้ตั้งค่า TELEGRAM_BOT_TOKEN หรือ TELEGRAM_CHAT_ID ในไฟล์ .env บน server',
-            'status' => $status
+            'status' => $status,
+            'network' => $networkStatus
         ]);
         exit();
     }
@@ -33,7 +35,8 @@ if ($shouldSendTest) {
             'success' => false,
             'test_sent' => false,
             'message' => 'PHP cURL extension ยังไม่เปิดใช้งานบน server',
-            'status' => $status
+            'status' => $status,
+            'network' => $networkStatus
         ]);
         exit();
     }
@@ -51,6 +54,7 @@ if ($shouldSendTest) {
             ? 'ส่งข้อความทดสอบ Telegram สำเร็จ'
             : 'ส่งข้อความทดสอบ Telegram ไม่สำเร็จ',
         'status' => $status,
+        'network' => $networkStatus,
         'last_result' => $lastResult,
         'telegram_response' => $decodedResponse
     ]);
@@ -61,5 +65,37 @@ echo json_encode([
     'success' => true,
     'test_sent' => false,
     'message' => 'ตรวจพบการตั้งค่า Telegram แล้ว หากต้องการส่งทดสอบให้เปิด URL นี้พร้อม ?send=1',
-    'status' => $status
+    'status' => $status,
+    'network' => $networkStatus
 ]);
+
+function getTelegramNetworkStatus()
+{
+    $host = 'api.telegram.org';
+    $addresses = gethostbynamel($host);
+    $tcp = [
+        'host' => $host,
+        'port' => 443,
+        'dns_resolved' => is_array($addresses) && count($addresses) > 0,
+        'resolved_ipv4' => is_array($addresses) ? $addresses : [],
+        'tcp_connect' => false,
+        'connect_error' => null,
+        'connect_errno' => null
+    ];
+
+    $errno = 0;
+    $errstr = '';
+    $start = microtime(true);
+    $socket = @fsockopen('ssl://' . $host, 443, $errno, $errstr, 5);
+    $tcp['elapsed_seconds'] = round(microtime(true) - $start, 3);
+
+    if (is_resource($socket)) {
+        $tcp['tcp_connect'] = true;
+        fclose($socket);
+    } else {
+        $tcp['connect_error'] = $errstr;
+        $tcp['connect_errno'] = $errno;
+    }
+
+    return $tcp;
+}

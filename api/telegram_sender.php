@@ -18,13 +18,12 @@ function sendTelegramMessage($botToken, $chatId, $message)
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-
-    // SSL options for Windows compatibility
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    applyTelegramCurlOptions($ch);
 
     $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlInfo = curl_getinfo($ch);
+    $httpCode = isset($curlInfo['http_code']) ? $curlInfo['http_code'] : 0;
     $curlError = curl_errno($ch) ? curl_error($ch) : '';
 
     if ($curlError !== '') {
@@ -33,7 +32,7 @@ function sendTelegramMessage($botToken, $chatId, $message)
 
     curl_close($ch);
 
-    recordTelegramApiResult('sendMessage', $httpCode, $response, $curlError);
+    recordTelegramApiResult('sendMessage', $httpCode, $response, $curlError, $curlInfo);
 
     return $response;
 }
@@ -59,6 +58,9 @@ function getTelegramConfigStatus()
         'chat_id_set' => $chatId !== '' && $chatId !== 'YOUR_CHAT_ID_HERE',
         'curl_loaded' => function_exists('curl_init'),
         'env_file_exists' => file_exists(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env'),
+        'force_ipv4' => telegramEnvEnabled('TELEGRAM_FORCE_IPV4', true),
+        'proxy_set' => telegramEnvValue('TELEGRAM_PROXY_URL') !== '',
+        'ssl_verify' => telegramEnvEnabled('TELEGRAM_SSL_VERIFY', true),
         'timezone' => date_default_timezone_get(),
         'server_time' => date('Y-m-d H:i:s'),
         'token_preview' => maskTelegramToken($token),
@@ -95,13 +97,12 @@ function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
     curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-
-    // SSL options for Windows compatibility
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    applyTelegramCurlOptions($ch);
 
     $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlInfo = curl_getinfo($ch);
+    $httpCode = isset($curlInfo['http_code']) ? $curlInfo['http_code'] : 0;
     $curlError = curl_errno($ch) ? curl_error($ch) : '';
 
     if ($curlError !== '') {
@@ -110,12 +111,50 @@ function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
 
     curl_close($ch);
 
-    recordTelegramApiResult('sendPhoto', $httpCode, $response, $curlError);
+    recordTelegramApiResult('sendPhoto', $httpCode, $response, $curlError, $curlInfo);
 
     return $response;
 }
 
-function recordTelegramApiResult($method, $httpCode, $response, $curlError = '')
+function applyTelegramCurlOptions($ch)
+{
+    curl_setopt($ch, CURLOPT_USERAGENT, 'satit-helpdesk/telegram-notifier');
+
+    if (telegramEnvEnabled('TELEGRAM_FORCE_IPV4', true) && defined('CURL_IPRESOLVE_V4')) {
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    }
+
+    $proxyUrl = telegramEnvValue('TELEGRAM_PROXY_URL');
+    if ($proxyUrl !== '') {
+        curl_setopt($ch, CURLOPT_PROXY, $proxyUrl);
+    }
+
+    if (telegramEnvEnabled('TELEGRAM_SSL_VERIFY', true)) {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+    } else {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    }
+}
+
+function telegramEnvValue($key, $default = '')
+{
+    if (function_exists('env')) {
+        return trim((string)env($key, $default));
+    }
+
+    $value = getenv($key);
+    return $value === false ? $default : trim((string)$value);
+}
+
+function telegramEnvEnabled($key, $default = false)
+{
+    $value = strtolower(telegramEnvValue($key, $default ? 'true' : 'false'));
+    return in_array($value, ['1', 'true', 'yes', 'on'], true);
+}
+
+function recordTelegramApiResult($method, $httpCode, $response, $curlError = '', $curlInfo = [])
 {
     $decodedResponse = json_decode((string)$response, true);
 
@@ -126,6 +165,10 @@ function recordTelegramApiResult($method, $httpCode, $response, $curlError = '')
         'ok' => is_array($decodedResponse) ? ($decodedResponse['ok'] ?? null) : null,
         'error_code' => is_array($decodedResponse) ? ($decodedResponse['error_code'] ?? null) : null,
         'description' => is_array($decodedResponse) ? ($decodedResponse['description'] ?? null) : null,
+        'primary_ip' => isset($curlInfo['primary_ip']) ? $curlInfo['primary_ip'] : null,
+        'primary_port' => isset($curlInfo['primary_port']) ? $curlInfo['primary_port'] : null,
+        'total_time' => isset($curlInfo['total_time']) ? $curlInfo['total_time'] : null,
+        'connect_time' => isset($curlInfo['connect_time']) ? $curlInfo['connect_time'] : null,
     ];
 
     logTelegramApiError($method, $httpCode, $response);
