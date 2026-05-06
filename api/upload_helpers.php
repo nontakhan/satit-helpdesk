@@ -34,19 +34,40 @@ function handleRequestImageUpload($field_name = 'request_image')
         throw new Exception('รองรับเฉพาะไฟล์รูปภาพ JPG, PNG, WEBP หรือ GIF');
     }
 
-    $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'requests';
-    if (!is_dir($upload_dir) && !mkdir($upload_dir, 0755, true)) {
-        throw new Exception('ไม่สามารถสร้างโฟลเดอร์สำหรับเก็บรูปได้');
-    }
+    $upload_dir = ensureRequestUploadDirectory();
 
     $filename = date('YmdHis') . '-' . bin2hex(random_bytes(8)) . '.' . $allowed_types[$mime_type];
     $target_path = $upload_dir . DIRECTORY_SEPARATOR . $filename;
 
     if (!move_uploaded_file($file['tmp_name'], $target_path)) {
+        $last_error = error_get_last();
+        $error_message = is_array($last_error) && isset($last_error['message']) ? $last_error['message'] : 'unknown error';
+        error_log('Request image move failed. Target: ' . $target_path . ' Error: ' . $error_message);
         throw new Exception('ไม่สามารถบันทึกรูปภาพได้');
     }
 
     return 'uploads/requests/' . $filename;
+}
+
+function ensureRequestUploadDirectory()
+{
+    $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'requests';
+
+    if (!is_dir($upload_dir) && !mkdir($upload_dir, 0755, true)) {
+        error_log('Request image upload directory creation failed: ' . $upload_dir);
+        throw new Exception('ไม่สามารถสร้างโฟลเดอร์สำหรับเก็บรูปได้');
+    }
+
+    if (!is_writable($upload_dir)) {
+        @chmod($upload_dir, 0775);
+    }
+
+    if (!is_writable($upload_dir)) {
+        error_log('Request image upload directory is not writable: ' . $upload_dir);
+        throw new Exception('โฟลเดอร์เก็บรูปภาพไม่สามารถเขียนไฟล์ได้ กรุณาแจ้งผู้ดูแลระบบ');
+    }
+
+    return $upload_dir;
 }
 
 function getUploadErrorMessage($error_code)
