@@ -13,7 +13,7 @@ function handleRequestImageUpload($field_name = 'request_image')
     $file = $_FILES[$field_name];
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception('ไม่สามารถอัปโหลดรูปได้ กรุณาลองใหม่อีกครั้ง');
+        throw new Exception(getUploadErrorMessage($file['error']));
     }
 
     $max_size = 5 * 1024 * 1024;
@@ -47,4 +47,23 @@ function handleRequestImageUpload($field_name = 'request_image')
     }
 
     return 'uploads/requests/' . $filename;
+}
+
+function getUploadErrorMessage($error_code)
+{
+    switch ($error_code) {
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+            return 'ไฟล์รูปภาพมีขนาดใหญ่เกินกว่าที่ระบบรองรับ กรุณาเลือกไฟล์ไม่เกิน 5MB';
+        case UPLOAD_ERR_PARTIAL:
+            return 'อัปโหลดรูปภาพไม่สมบูรณ์ กรุณาเลือกไฟล์แล้วส่งใหม่อีกครั้ง';
+        case UPLOAD_ERR_NO_TMP_DIR:
+            return 'เซิร์ฟเวอร์ไม่มีโฟลเดอร์ชั่วคราวสำหรับอัปโหลดไฟล์ กรุณาแจ้งผู้ดูแลระบบ';
+        case UPLOAD_ERR_CANT_WRITE:
+            return 'เซิร์ฟเวอร์ไม่สามารถเขียนไฟล์รูปภาพได้ กรุณาแจ้งผู้ดูแลระบบ';
+        case UPLOAD_ERR_EXTENSION:
+            return 'ส่วนขยายของ PHP ปฏิเสธการอัปโหลดไฟล์ กรุณาแจ้งผู้ดูแลระบบ';
+        default:
+            return 'ไม่สามารถอัปโหลดรูปได้ กรุณาลองใหม่อีกครั้ง';
+    }
 }

@@ -379,7 +379,7 @@ $reporters_result = $conn->query($reporters_sql);
                                     <i class="bi bi-image"></i> รูปประกอบ
                                 </label>
                                 <input type="file" class="form-control" id="request_image" name="request_image"
-                                    accept="image/jpeg,image/png,image/webp,image/gif">
+                                    accept="image/jpeg,image/png,image/webp,image/gif" data-max-size="5242880">
                                 <div class="form-text">อัปโหลดได้ 1 รูป รองรับ JPG, PNG, WEBP, GIF ขนาดไม่เกิน 5MB</div>
                             </div>
                             <div class="mb-3">
@@ -797,9 +797,41 @@ $reporters_result = $conn->query($reporters_sql);
             }
 
             // ===== ส่วนที่แก้ไข: จัดการการส่งฟอร์ม =====
+            function validateRequestImage() {
+                const imageInput = document.getElementById('request_image');
+                const file = imageInput.files[0];
+
+                if (!file) {
+                    return true;
+                }
+
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+                const maxSize = Number(imageInput.dataset.maxSize || 5242880);
+
+                if (!allowedTypes.includes(file.type)) {
+                    Swal.fire('ไฟล์รูปภาพไม่ถูกต้อง', 'รองรับเฉพาะไฟล์ JPG, PNG, WEBP หรือ GIF', 'warning');
+                    imageInput.value = '';
+                    return false;
+                }
+
+                if (file.size > maxSize) {
+                    Swal.fire('ไฟล์รูปภาพใหญ่เกินไป', 'กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 5MB', 'warning');
+                    imageInput.value = '';
+                    return false;
+                }
+
+                return true;
+            }
+
+            document.getElementById('request_image').addEventListener('change', validateRequestImage);
+
             document.getElementById('requestForm').addEventListener('submit', function (event) {
                 event.preventDefault();
                 const form = this; // เก็บ form ที่ถูก submit ไว้
+
+                if (!validateRequestImage()) {
+                    return;
+                }
 
                 // แสดง Pop-up ยืนยันก่อน
                 Swal.fire({
