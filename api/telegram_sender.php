@@ -1,43 +1,38 @@
 <?php
 /**
  * telegram_sender.php
- * ฟังก์ชันสำหรับส่งข้อความไปยัง Telegram Bot API
+ * ฟังก์ชันสำหรับส่งข้อความและรูปภาพไปยัง Telegram Bot API
  */
 function sendTelegramMessage($botToken, $chatId, $message)
 {
-    // URL ของ Telegram API
     $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
-
-    // ข้อมูลที่จะส่งไป (ในรูปแบบ Array)
     $postData = [
         'chat_id' => $chatId,
         'text' => $message,
         'parse_mode' => 'HTML'
     ];
 
-    // ใช้ cURL เพื่อส่ง HTTP POST request
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $apiUrl);
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // ตั้งเวลา timeout 10 วินาที
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
     // SSL options for Windows compatibility
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
-    // ทำการ execute request
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-    // ตรวจสอบ error (ถ้ามี)
     if (curl_errno($ch)) {
-        // Log error to file for debugging
-        error_log('Telegram cURL Error: ' . curl_error($ch));
+        error_log('Telegram message cURL Error: ' . curl_error($ch));
     }
 
-    // ปิดการเชื่อมต่อ cURL
     curl_close($ch);
+
+    logTelegramApiError('sendMessage', $httpCode, $response);
 
     return $response;
 }
@@ -53,8 +48,7 @@ function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
     $postData = [
         'chat_id' => $chatId,
         'photo' => new CURLFile($photoPath),
-        'caption' => mb_substr($caption, 0, 1024),
-        'parse_mode' => 'HTML'
+        'caption' => mb_substr($caption, 0, 1024)
     ];
 
     $ch = curl_init();
@@ -69,6 +63,7 @@ function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     if (curl_errno($ch)) {
         error_log('Telegram photo cURL Error: ' . curl_error($ch));
@@ -76,6 +71,21 @@ function sendTelegramPhoto($botToken, $chatId, $photoPath, $caption = '')
 
     curl_close($ch);
 
+    logTelegramApiError('sendPhoto', $httpCode, $response);
+
     return $response;
+}
+
+function logTelegramApiError($method, $httpCode, $response)
+{
+    if ($response === false) {
+        error_log('Telegram API ' . $method . ' failed: empty cURL response');
+        return;
+    }
+
+    $decodedResponse = json_decode($response, true);
+    if ($httpCode < 200 || $httpCode >= 300 || !is_array($decodedResponse) || empty($decodedResponse['ok'])) {
+        error_log('Telegram API ' . $method . ' error. HTTP ' . $httpCode . ' Response: ' . $response);
+    }
 }
 ?>
