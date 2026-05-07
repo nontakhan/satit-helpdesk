@@ -14,6 +14,50 @@ $response = [
     'redirect_url' => ''
 ];
 
+function get_request_image_file_path($image_path) {
+    if (empty($image_path)) {
+        return null;
+    }
+
+    $normalized_path = str_replace('\\', '/', $image_path);
+    $expected_prefix = 'uploads/requests/';
+
+    if (strpos($normalized_path, $expected_prefix) !== 0) {
+        return null;
+    }
+
+    $filename = basename($normalized_path);
+    if ($filename === '' || $filename !== substr($normalized_path, strlen($expected_prefix))) {
+        return null;
+    }
+
+    $upload_dir = realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'requests');
+    if ($upload_dir === false) {
+        return null;
+    }
+
+    $file_path = $upload_dir . DIRECTORY_SEPARATOR . $filename;
+    $real_file_path = realpath($file_path);
+
+    if ($real_file_path === false || strpos($real_file_path, $upload_dir . DIRECTORY_SEPARATOR) !== 0) {
+        return null;
+    }
+
+    return $real_file_path;
+}
+
+function delete_request_image_file($image_path) {
+    $file_path = get_request_image_file_path($image_path);
+
+    if ($file_path === null || !is_file($file_path)) {
+        return;
+    }
+
+    if (!unlink($file_path)) {
+        error_log('Request image delete failed: ' . $file_path);
+    }
+}
+
 if (!isset($_SESSION['admin_id'])) {
     $response['message'] = 'เซสชั่นหมดอายุ, กรุณาเข้าสู่ระบบใหม่อีกครั้ง';
     ob_end_clean();
@@ -119,12 +163,25 @@ try {
         }
 
         $request_id = (int)$_POST['request_id'];
+        $image_path = null;
+
+        $select_stmt = $conn->prepare("SELECT image_path FROM requests WHERE id = ?");
+        $select_stmt->bind_param("i", $request_id);
+        $select_stmt->execute();
+        $select_result = $select_stmt->get_result();
+
+        if ($select_result->num_rows > 0) {
+            $request = $select_result->fetch_assoc();
+            $image_path = $request['image_path'];
+        }
+        $select_stmt->close();
 
         $stmt = $conn->prepare("DELETE FROM requests WHERE id = ?");
         $stmt->bind_param("i", $request_id);
 
         if ($stmt->execute()) {
             if ($stmt->affected_rows > 0) {
+                delete_request_image_file($image_path);
                 $response['success'] = true;
                 $response['message'] = 'ลบรายการเรียบร้อยแล้ว';
                 $response['redirect_url'] = 'requests_list.php'; // ลบเสร็จกลับไปหน้ารายการ
