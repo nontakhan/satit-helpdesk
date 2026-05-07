@@ -320,6 +320,45 @@ $reporters_result = $conn->query($reporters_sql);
         .list-group-item .btn:hover {
             transform: scale(1.05);
         }
+
+        .image-preview {
+            display: none;
+            margin-top: 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .image-preview.is-visible {
+            display: block;
+        }
+
+        .image-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .image-preview-title {
+            min-width: 0;
+            font-size: 0.9rem;
+            color: #495057;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-preview-img {
+            display: block;
+            width: 100%;
+            max-height: 260px;
+            object-fit: contain;
+            background: #fff;
+        }
     </style>
 </head>
 
@@ -381,6 +420,15 @@ $reporters_result = $conn->query($reporters_sql);
                                 <input type="file" class="form-control" id="request_image" name="request_image"
                                     accept="image/jpeg,image/png,image/webp,image/gif" data-max-size="5242880">
                                 <div class="form-text">อัปโหลดได้ 1 รูป รองรับ JPG, PNG, WEBP, GIF ขนาดไม่เกิน 5MB</div>
+                                <div class="image-preview" id="requestImagePreview" aria-live="polite">
+                                    <div class="image-preview-header">
+                                        <span class="image-preview-title" id="requestImagePreviewName"></span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearRequestImageBtn">
+                                            <i class="bi bi-x-lg me-1"></i>ล้างรูป
+                                        </button>
+                                    </div>
+                                    <img src="" alt="ตัวอย่างรูปประกอบ" class="image-preview-img" id="requestImagePreviewImg">
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="location_id" class="form-label">
@@ -823,6 +871,56 @@ $reporters_result = $conn->query($reporters_sql);
                 return true;
             }
 
+            let requestImagePreviewUrl = null;
+
+            function clearRequestImagePreview() {
+                const preview = document.getElementById('requestImagePreview');
+                const previewImg = document.getElementById('requestImagePreviewImg');
+                const previewName = document.getElementById('requestImagePreviewName');
+
+                if (requestImagePreviewUrl) {
+                    URL.revokeObjectURL(requestImagePreviewUrl);
+                    requestImagePreviewUrl = null;
+                }
+
+                preview.classList.remove('is-visible');
+                previewImg.removeAttribute('src');
+                previewName.textContent = '';
+            }
+
+            function showRequestImagePreview(file) {
+                const preview = document.getElementById('requestImagePreview');
+                const previewImg = document.getElementById('requestImagePreviewImg');
+                const previewName = document.getElementById('requestImagePreviewName');
+
+                clearRequestImagePreview();
+
+                if (!file) {
+                    return;
+                }
+
+                requestImagePreviewUrl = URL.createObjectURL(file);
+                previewImg.src = requestImagePreviewUrl;
+                previewName.textContent = file.name;
+                preview.classList.add('is-visible');
+            }
+
+            function clearRequestImage() {
+                document.getElementById('request_image').value = '';
+                clearRequestImagePreview();
+            }
+
+            function handleRequestImageChange() {
+                const imageInput = document.getElementById('request_image');
+
+                if (!validateRequestImage()) {
+                    clearRequestImagePreview();
+                    return;
+                }
+
+                showRequestImagePreview(imageInput.files[0]);
+            }
+
             function loadImageFromFile(file) {
                 return new Promise((resolve, reject) => {
                     const imageUrl = URL.createObjectURL(file);
@@ -889,7 +987,8 @@ $reporters_result = $conn->query($reporters_sql);
                 return formData;
             }
 
-            document.getElementById('request_image').addEventListener('change', validateRequestImage);
+            document.getElementById('request_image').addEventListener('change', handleRequestImageChange);
+            document.getElementById('clearRequestImageBtn').addEventListener('click', clearRequestImage);
 
             document.getElementById('requestForm').addEventListener('submit', async function (event) {
                 event.preventDefault();
@@ -946,6 +1045,7 @@ $reporters_result = $conn->query($reporters_sql);
                                     })
                                         .then(() => {
                                             form.reset();
+                                            clearRequestImagePreview();
                                             $('#location_id').val(null).trigger('change');
                                             $('#reporter_id').val(null).trigger('change');
                                             setCurrentDateTime();
