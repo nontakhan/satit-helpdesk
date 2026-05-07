@@ -24,6 +24,7 @@ $sql_base = "
         c.category_name,
         r.cause, r.solution, s_final.status_name as final_status_name,
         r.satisfaction_rating, r.satisfaction_comment,
+        r.image_path,
         s_current.status_name as current_status_name
     FROM requests r
     LEFT JOIN locations l ON r.location_id = l.id
@@ -443,6 +444,7 @@ if ($status_id_filter > 0)
                                     data-status="<?php echo htmlspecialchars($status_name); ?>"
                                     data-resolution-time="<?php echo $row['resolution_time_minutes'] ?? '-'; ?>"
                                     data-rating="<?php echo $row['satisfaction_rating'] ?? '0'; ?>"
+                                    data-image-path="<?php echo htmlspecialchars($row['image_path'] ?? ''); ?>"
                                     data-comment="<?php echo htmlspecialchars($row['satisfaction_comment'] ?? '-'); ?>">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -557,6 +559,15 @@ if ($status_id_filter > 0)
                     </div>
                 </div>
 
+                <!-- Request Image -->
+                <div id="modal-image-section" class="mt-4 d-none">
+                    <h6 class="text-primary"><i class="bi bi-image me-2"></i>รูปประกอบการแจ้งซ่อม</h6>
+                    <a id="modal-image-link" href="#" target="_blank" rel="noopener">
+                        <img id="modal-image" src="" alt="รูปประกอบการแจ้งซ่อม"
+                            class="img-fluid rounded border bg-light" style="max-height: 420px;">
+                    </a>
+                </div>
+
                 <!-- Comment -->
                 <div id="modal-comment-section" class="mt-4 d-none">
                     <h6 class="text-info"><i class="bi bi-chat-quote me-2"></i>ความคิดเห็น</h6>
@@ -665,6 +676,19 @@ require_once 'partials/footer.php';
                 stars += '<i class="bi bi-star' + (i <= rating ? '-fill' : '') + '"></i>';
             }
             $('#modal-rating').html(rating > 0 ? stars : '<span class="text-muted">-</span>');
+
+            // Request image
+            var imagePath = btn.data('image-path');
+            if (imagePath) {
+                var imageUrl = '../' + imagePath;
+                $('#modal-image').attr('src', imageUrl);
+                $('#modal-image-link').attr('href', imageUrl);
+                $('#modal-image-section').removeClass('d-none');
+            } else {
+                $('#modal-image').removeAttr('src');
+                $('#modal-image-link').attr('href', '#');
+                $('#modal-image-section').addClass('d-none');
+            }
 
             // Comment
             var comment = btn.data('comment');
