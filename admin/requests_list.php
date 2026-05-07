@@ -50,17 +50,7 @@ if (!empty($params)) {
 }
 $stmt->execute();
 $requests_result = $stmt->get_result();
-$current_list_count = $requests_result ? $requests_result->num_rows : 0;
-$current_latest_id = 0;
 ?>
-
-<div class="alert alert-info d-none align-items-center justify-content-between gap-3" id="requestUpdateAlert" role="alert">
-    <div>
-        <i class="bi bi-arrow-repeat me-1"></i>
-        มีรายการแจ้งซ่อมใหม่หรือข้อมูลรายการเปลี่ยนแปลง
-    </div>
-    <button type="button" class="btn btn-sm btn-primary" id="reloadRequestListBtn">โหลดข้อมูลล่าสุด</button>
-</div>
 
 <div class="card">
     <div class="card-header">
@@ -82,7 +72,6 @@ $current_latest_id = 0;
                 <tbody>
                     <?php if ($requests_result && $requests_result->num_rows > 0): ?>
                         <?php while($row = $requests_result->fetch_assoc()): ?>
-                            <?php $current_latest_id = max($current_latest_id, (int)$row['id']); ?>
                             <tr id="request-row-<?php echo $row['id']; ?>">
                                 <td><?php echo date('d/m/Y H:i', strtotime($row['request_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['problem_description']); ?></td>
@@ -141,24 +130,12 @@ require_once 'partials/footer.php';
 ?>
 
 <script>
-const requestListSignature = {
-    count: <?php echo (int)$current_list_count; ?>,
-    latestId: <?php echo (int)$current_latest_id; ?>,
-    status: '<?php echo isset($_GET['status']) ? (int)$_GET['status'] : ''; ?>'
-};
-
 $(document).ready(function() {
     // ---- 1. เริ่มต้นการทำงานของ DataTables ----
     $('.datatable').DataTable({
         language: { url: 'https://cdn.datatables.net/plug-ins/2.0.8/i18n/th.json' },
         order: [[0, 'desc']] // เรียงตามวันที่แจ้งล่าสุด
     });
-
-    $('#reloadRequestListBtn').on('click', function() {
-        window.location.reload();
-    });
-
-    startRequestListPolling();
 
     // ---- 2. สคริปต์สำหรับเปิด Modal ----
     const modal = document.getElementById('requestDetailModal');
@@ -202,37 +179,6 @@ $(document).ready(function() {
         });
     }
 });
-
-function startRequestListPolling() {
-    const pollIntervalMs = 30000;
-    let isPolling = false;
-
-    setInterval(function() {
-        if (isPolling || document.hidden) {
-            return;
-        }
-
-        isPolling = true;
-        const params = requestListSignature.status ? `?status=${requestListSignature.status}` : '';
-
-        axios.get(`../api/get_request_list_signature.php${params}`)
-            .then(function(response) {
-                if (!response.data.success) {
-                    return;
-                }
-
-                const hasChanged = Number(response.data.count) !== requestListSignature.count ||
-                    Number(response.data.latest_id) !== requestListSignature.latestId;
-
-                if (hasChanged) {
-                    $('#requestUpdateAlert').removeClass('d-none').addClass('d-flex');
-                }
-            })
-            .finally(function() {
-                isPolling = false;
-            });
-    }, pollIntervalMs);
-}
 
 // ---- 3. ฟังก์ชันสำหรับรับเรื่อง (เหมือนใน Dashboard) ----
 function acceptRequest(requestId) {

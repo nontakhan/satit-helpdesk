@@ -21,6 +21,10 @@ $sql_completed = "SELECT COUNT(id) as total_completed FROM requests WHERE final_
 $result_completed = $conn->query($sql_completed);
 $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
 
+$sql_latest = "SELECT COALESCE(MAX(id), 0) as latest_id FROM requests";
+$result_latest = $conn->query($sql_latest);
+$latest_request_id = $result_latest->fetch_assoc()['latest_id'];
+
 ?>
 
 <style>
@@ -71,6 +75,14 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
     </a>
 </div>
 
+<div class="alert alert-info d-none align-items-center justify-content-between gap-3" id="dashboardUpdateAlert" role="alert">
+    <div>
+        <i class="bi bi-arrow-repeat me-1"></i>
+        ข้อมูล Dashboard มีการอัปเดตแล้ว
+    </div>
+    <a href="requests_list.php?status=1" class="btn btn-sm btn-primary">ดูรายการรอรับเรื่อง</a>
+</div>
+
 <!-- ส่วนของการ์ดสรุปข้อมูล -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
@@ -80,7 +92,7 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <div class="opacity-75 mb-1">รอรับเรื่อง</div>
-                            <div class="display-6 fw-bold"><?php echo $pending_count; ?></div>
+                            <div class="display-6 fw-bold" id="pendingCount"><?php echo $pending_count; ?></div>
                             <small class="opacity-75">รายการ</small>
                         </div>
                         <span class="stat-icon"><i class="bi bi-hourglass-split"></i></span>
@@ -96,7 +108,7 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <div class="opacity-75 mb-1">กำลังดำเนินการ</div>
-                            <div class="display-6 fw-bold"><?php echo $processing_count; ?></div>
+                            <div class="display-6 fw-bold" id="processingCount"><?php echo $processing_count; ?></div>
                             <small class="opacity-75">รายการ</small>
                         </div>
                         <span class="stat-icon"><i class="bi bi-tools"></i></span>
@@ -112,7 +124,7 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <div class="opacity-75 mb-1">เสร็จสิ้นเดือนนี้</div>
-                            <div class="display-6 fw-bold"><?php echo $completed_count_month; ?></div>
+                            <div class="display-6 fw-bold" id="completedMonthCount"><?php echo $completed_count_month; ?></div>
                             <small class="opacity-75">รายการ</small>
                         </div>
                         <span class="stat-icon"><i class="bi bi-check2-circle"></i></span>
@@ -128,7 +140,7 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <div class="opacity-75 mb-1">แจ้งซ่อมเดือนนี้</div>
-                            <div class="display-6 fw-bold"><?php echo $total_count_month; ?></div>
+                            <div class="display-6 fw-bold" id="totalMonthCount"><?php echo $total_count_month; ?></div>
                             <small class="opacity-75">รายการ</small>
                         </div>
                         <span class="stat-icon"><i class="bi bi-calendar3"></i></span>
@@ -186,7 +198,17 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
     // Register the datalabels plugin
     Chart.register(ChartDataLabels);
 
+    const dashboardStats = {
+        pending: <?php echo (int)$pending_count; ?>,
+        processing: <?php echo (int)$processing_count; ?>,
+        completedMonth: <?php echo (int)$completed_count_month; ?>,
+        totalMonth: <?php echo (int)$total_count_month; ?>,
+        latestId: <?php echo (int)$latest_request_id; ?>
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
+        startDashboardPolling();
+
         // ดึงข้อมูลจาก API
         axios.get('../api/get_chart_data.php')
             .then(function (response) {
@@ -269,6 +291,63 @@ $completed_count_month = $result_completed->fetch_assoc()['total_completed'];
                 console.error("Error fetching chart data:", error);
             });
     });
+
+    function updateDashboardCount(elementId, nextValue) {
+        const element = document.getElementById(elementId);
+
+        if (!element || element.textContent === String(nextValue)) {
+            return;
+        }
+
+        element.textContent = nextValue;
+    }
+
+    function startDashboardPolling() {
+        const pollIntervalMs = 5000;
+        let isPolling = false;
+
+        setInterval(function () {
+            if (isPolling || document.hidden) {
+                return;
+            }
+
+            isPolling = true;
+
+            axios.get('../api/get_dashboard_stats.php')
+                .then(function (response) {
+                    if (!response.data.success) {
+                        return;
+                    }
+
+                    const stats = response.data.stats;
+                    const hasChanged = Number(stats.pending) !== dashboardStats.pending ||
+                        Number(stats.processing) !== dashboardStats.processing ||
+                        Number(stats.completed_month) !== dashboardStats.completedMonth ||
+                        Number(stats.total_month) !== dashboardStats.totalMonth ||
+                        Number(stats.latest_id) !== dashboardStats.latestId;
+
+                    if (!hasChanged) {
+                        return;
+                    }
+
+                    dashboardStats.pending = Number(stats.pending);
+                    dashboardStats.processing = Number(stats.processing);
+                    dashboardStats.completedMonth = Number(stats.completed_month);
+                    dashboardStats.totalMonth = Number(stats.total_month);
+                    dashboardStats.latestId = Number(stats.latest_id);
+
+                    updateDashboardCount('pendingCount', dashboardStats.pending);
+                    updateDashboardCount('processingCount', dashboardStats.processing);
+                    updateDashboardCount('completedMonthCount', dashboardStats.completedMonth);
+                    updateDashboardCount('totalMonthCount', dashboardStats.totalMonth);
+                    document.getElementById('dashboardUpdateAlert').classList.remove('d-none');
+                    document.getElementById('dashboardUpdateAlert').classList.add('d-flex');
+                })
+                .finally(function () {
+                    isPolling = false;
+                });
+        }, pollIntervalMs);
+    }
 </script>
 
 <?php
