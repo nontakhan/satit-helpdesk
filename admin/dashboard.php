@@ -205,6 +205,7 @@ $latest_request_id = $result_latest->fetch_assoc()['latest_id'];
         totalMonth: <?php echo (int)$total_count_month; ?>,
         latestId: <?php echo (int)$latest_request_id; ?>
     };
+    let dashboardUpdateAlertTimer = null;
 
     document.addEventListener('DOMContentLoaded', function () {
         startDashboardPolling();
@@ -340,13 +341,33 @@ $latest_request_id = $result_latest->fetch_assoc()['latest_id'];
                     updateDashboardCount('processingCount', dashboardStats.processing);
                     updateDashboardCount('completedMonthCount', dashboardStats.completedMonth);
                     updateDashboardCount('totalMonthCount', dashboardStats.totalMonth);
-                    document.getElementById('dashboardUpdateAlert').classList.remove('d-none');
-                    document.getElementById('dashboardUpdateAlert').classList.add('d-flex');
+                    showDashboardUpdateAlert();
                 })
                 .finally(function () {
                     isPolling = false;
                 });
         }, pollIntervalMs);
+    }
+
+    function showDashboardUpdateAlert() {
+        const alert = document.getElementById('dashboardUpdateAlert');
+
+        if (!alert) {
+            return;
+        }
+
+        alert.classList.remove('d-none');
+        alert.classList.add('d-flex');
+
+        if (dashboardUpdateAlertTimer) {
+            clearTimeout(dashboardUpdateAlertTimer);
+        }
+
+        dashboardUpdateAlertTimer = setTimeout(function () {
+            alert.classList.add('d-none');
+            alert.classList.remove('d-flex');
+            dashboardUpdateAlertTimer = null;
+        }, 10000);
     }
 </script>
 
