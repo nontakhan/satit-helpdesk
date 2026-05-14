@@ -65,9 +65,7 @@ try {
                 $message .= "<b>ผู้รับเรื่อง:</b> " . htmlspecialchars($adminName);
 
                 // ส่งข้อความ
-                if (defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
-                    sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $message);
-                }
+                sendConfiguredTelegramMessage($message, 'accept request #' . $requestId);
                 $info_stmt->close();
 
             } catch (Exception $e) {

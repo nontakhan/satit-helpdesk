@@ -145,9 +145,7 @@ try {
                 $msg .= "<b>ผู้ดำเนินการ:</b> " . htmlspecialchars($admin_name) . "\n";
                 $msg .= "<b>วิธีแก้ไข:</b> " . htmlspecialchars($solution);
 
-                if (defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
-                    sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $msg);
-                }
+                sendConfiguredTelegramMessage($msg, 'repair update #' . $request_id);
             } catch (Exception $e) {}
         } else {
             throw new Exception("Execute failed: " . $stmt->error);

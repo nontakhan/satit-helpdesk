@@ -70,7 +70,7 @@ try {
 
             // ส่งข้อความ
             if (isTelegramConfigured()) {
-                sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $message);
+                sendConfiguredTelegramMessage($message, 'new request #' . $new_request_id);
 
                 if (!empty($image_path)) {
                     $photo_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $image_path);

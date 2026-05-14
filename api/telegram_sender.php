@@ -47,6 +47,23 @@ function isTelegramConfigured()
         TELEGRAM_CHAT_ID !== 'YOUR_CHAT_ID_HERE';
 }
 
+function sendConfiguredTelegramMessage($message, $context = 'notification')
+{
+    if (!isTelegramConfigured()) {
+        error_log('Telegram ' . $context . ' skipped: bot token or chat id is not configured. Check .env on this server.');
+        return false;
+    }
+
+    $response = sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, $message);
+    $lastResult = getLastTelegramApiResult();
+
+    if (!is_array($lastResult) || empty($lastResult['ok'])) {
+        error_log('Telegram ' . $context . ' failed: ' . json_encode($lastResult, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    return $response;
+}
+
 function getTelegramConfigStatus()
 {
     $token = defined('TELEGRAM_BOT_TOKEN') ? TELEGRAM_BOT_TOKEN : '';
